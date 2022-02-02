@@ -1376,6 +1376,8 @@ class MFACPruningModifier(GMPruningModifier):
         channels, or a SparsityMaskCreator object. default is 'unstructured'
     :param global_sparsity: set True to enable global pruning. if False, pruning will
         be layer-wise. Default is False
+    :param use_gradient_buffering: Optional bool to use gradient buffering instead of 
+    grad sampling. By default, grad sampling is always used when available
     :param mfac_options: Dictionary of key words specifying arguments for the M-FAC
         pruning run. num_grads controls the number of gradient samples that are kept,
         fisher_block_size specifies the block size to break the M-FAC computation into
@@ -1399,6 +1401,7 @@ class MFACPruningModifier(GMPruningModifier):
         log_types: Union[str, List[str]] = ALL_TOKEN,
         mask_type: Union[str, List[int], PruningMaskCreator] = "unstructured",
         global_sparsity: bool = False,
+        use_gradient_buffering: Optional[bool] = None,
         mfac_options: Dict[str, Any] = None,
     ):
         super().__init__(
@@ -1418,6 +1421,7 @@ class MFACPruningModifier(GMPruningModifier):
         )
         self._mfac_options = mfac_options or {}
         self._grad_sampler = None
+        self._use_gradient_buffering = use_gradient_buffering
 
     @ModifierProp(serializable=False)
     def score_type(self) -> str:
@@ -1457,7 +1461,7 @@ class MFACPruningModifier(GMPruningModifier):
         :param kwargs: Optional kwargs to support specific arguments
             for individual modifiers.
         """
-        if "grad_sampler" in kwargs:
+        if "grad_sampler" in kwargs and self._use_gradient_buffering is not True:
             # set grad sampler, must be done before initialize in case pruning step
             # occurs on initialize epoch
             grad_sampler = kwargs["grad_sampler"]
@@ -1466,6 +1470,12 @@ class MFACPruningModifier(GMPruningModifier):
                     "grad_sampler must be an instance of the GradSampler class"
                 )
             self._grad_sampler = grad_sampler
+
+        elif self._use_gradient_buffering is False:
+            raise RuntimeError(
+                    "grad_sampler must be provided when use_gradient_buffering is set" 
+                    "to False"
+                )
 
         super().initialize(module, epoch, loggers, **kwargs)
 
