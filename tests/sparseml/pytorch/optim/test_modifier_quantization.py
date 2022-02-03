@@ -54,6 +54,10 @@ QUANTIZATION_MODIFIERS = [
         start_epoch=0.0,
         quantize_linear_activations=False,
     ),
+    lambda: QuantizationModifier(
+        start_epoch=0.0,
+        enable_int4_activations=True,
+    ),
 ]
 
 
@@ -68,7 +72,11 @@ def _is_quantiable_module(module):
 
 
 def _test_quantizable_module(
-    module, qat_expected, reduce_range, quantize_linear_activations
+    module,
+    qat_expected,
+    reduce_range,
+    quantize_linear_activations,
+    enable_int4_activations,
 ):
     if qat_expected:
         assert hasattr(module, "qconfig") and module.qconfig is not None
@@ -80,6 +88,11 @@ def _test_quantizable_module(
         )
         if module.qconfig.activation is not Identity:
             assert module.qconfig.activation.p.keywords["reduce_range"] == reduce_range
+        assert (
+            module.qconfig.activation.p.keywords["enable_int4_activations"]
+            == enable_int4_activations
+        )
+
         if isinstance(module, Linear):
             assert isinstance(module.activation_post_process, Identity) == (
                 not quantize_linear_activations
@@ -102,6 +115,7 @@ def _test_qat_applied(modifier, model):
                     True,
                     modifier.reduce_range,
                     modifier.quantize_linear_activations,
+                    modifier.enable_int4_activations,
                 )
     else:
         assert not hasattr(model, "qconfig") or model.qconfig is None
@@ -114,6 +128,7 @@ def _test_qat_applied(modifier, model):
                 _is_valid_submodule(name, submodules),
                 modifier.reduce_range,
                 modifier.quantize_linear_activations,
+                modifier.enable_int4_activations,
             )
 
 
@@ -207,6 +222,7 @@ def test_quantization_modifier_yaml():
     quantize_embeddings = False
     reduce_range = True
     quantize_linear_activations = False
+    enable_int4_activations = True
     yaml_str = f"""
         !QuantizationModifier
             start_epoch: {start_epoch}
@@ -217,6 +233,7 @@ def test_quantization_modifier_yaml():
             quantize_embeddings: {quantize_embeddings}
             reduce_range: {reduce_range}
             quantize_linear_activations: {quantize_linear_activations}
+            enable_int4_activations: {enable_int4_activations}
         """
     yaml_modifier = QuantizationModifier.load_obj(
         yaml_str
@@ -233,6 +250,7 @@ def test_quantization_modifier_yaml():
         quantize_embeddings=quantize_embeddings,
         reduce_range=reduce_range,
         quantize_linear_activations=quantize_linear_activations,
+        enable_int4_activations=enable_int4_activations,
     )
 
     assert isinstance(yaml_modifier, QuantizationModifier)
@@ -275,4 +293,9 @@ def test_quantization_modifier_yaml():
         yaml_modifier.quantize_linear_activations
         == serialized_modifier.quantize_linear_activations
         == obj_modifier.quantize_linear_activations
+    )
+    assert (
+        yaml_modifier.enable_int4_activations
+        == serialized_modifier.enable_int4_activations
+        == obj_modifier.enable_int4_activations
     )
