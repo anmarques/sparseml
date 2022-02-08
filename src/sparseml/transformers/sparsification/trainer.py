@@ -22,8 +22,8 @@ import glob
 import logging
 import math
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union
 from functools import partial
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
 from torch.nn import Module
@@ -34,8 +34,7 @@ from transformers.trainer_callback import TrainerState
 from transformers.trainer_utils import get_last_checkpoint
 
 from sparseml.pytorch.optim.manager import ScheduledModifierManager
-from sparseml.pytorch.utils import WANDBLogger
-from sparseml.pytorch.utils import GradSampler
+from sparseml.pytorch.utils import GradSampler, WANDBLogger
 from sparseml.transformers.utils.helpers import RECIPE_REGEX, RECIPE_TEMPLATE
 
 
@@ -121,8 +120,9 @@ class RecipeManagerTrainerInterface:
         self.callback_disable_fp16 = DisableHalfPrecisionCallback(self)
         self.callback_handler.add_callback(self.callback_disable_fp16)
 
-    
-        self.grad_sampler = GradSampler(self._train_data_loader(), self._mfac_loss_function)
+        self.grad_sampler = GradSampler(
+            self._train_data_loader(), self._mfac_loss_function
+        )
 
     def apply_manager(self, epoch: float, checkpoint: Optional[str]) -> bool:
         """
@@ -221,7 +221,7 @@ class RecipeManagerTrainerInterface:
                 allow_parallel_module=False,
                 loggers=self.manager_loggers,
                 distillation_teacher=self.teacher,
-                grad_sampler = self.grad_sampler,
+                grad_sampler=self.grad_sampler,
             ),
         )
         self.manager_initialized = True
@@ -426,18 +426,18 @@ class RecipeManagerTrainerInterface:
         data_loader_template = self.get_train_dataloader()
 
         data_loader = torch.utils.data.DataLoader(
-            dataset = data_loader_template.dataset,
-            batch_size = data_loader_template.batch_size//2,
-            sampler = data_loader_template.sampler,
-            num_workers = data_loader_template.num_workers,
-            collate_fn = data_loader_template.collate_fn,
-            pin_memory = data_loader_template.pin_memory,
-            drop_last = data_loader_template.drop_last,
-            timeout = data_loader_template.timeout,
-            worker_init_fn = data_loader_template.worker_init_fn,
-            generator = data_loader_template.generator,
-            prefetch_factor = data_loader_template.prefetch_factor,
-            persistent_workers = data_loader_template.persistent_workers,
+            dataset=data_loader_template.dataset,
+            batch_size=data_loader_template.batch_size // 2,
+            sampler=data_loader_template.sampler,
+            num_workers=data_loader_template.num_workers,
+            collate_fn=data_loader_template.collate_fn,
+            pin_memory=data_loader_template.pin_memory,
+            drop_last=data_loader_template.drop_last,
+            timeout=data_loader_template.timeout,
+            worker_init_fn=data_loader_template.worker_init_fn,
+            generator=data_loader_template.generator,
+            prefetch_factor=data_loader_template.prefetch_factor,
+            persistent_workers=data_loader_template.persistent_workers,
         )
 
         for sample in data_loader:
@@ -447,14 +447,18 @@ class RecipeManagerTrainerInterface:
                 label = None
             sample = self._prepare_inputs(sample)
             yield [], sample, label
-  
 
     def _mfac_loss_function(self, model_outputs, loss_target):
         if loss_target is not None:
             loss = self.label_smoother(model_outputs, loss_target)
         else:
-            loss = model_outputs["loss"] if isinstance(model_outputs, dict) else model_outputs[0]
+            loss = (
+                model_outputs["loss"]
+                if isinstance(model_outputs, dict)
+                else model_outputs[0]
+            )
         return loss
+
 
 class TrainerInterface(RecipeManagerTrainerInterface):
     """
