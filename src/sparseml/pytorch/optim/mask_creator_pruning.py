@@ -186,6 +186,12 @@ class UnstructuredPruningMaskCreator(PruningMaskCreator):
             global_mask = masks[0]
             masks = self._unstack_flattened_tensors(global_mask, original_tensors)
             del global_mask
+        for mask in masks:
+            flat_mask = mask.view(-1)
+            for i in range(mask.numel()):
+                if flat_mask[i] == 0:
+                    flat_mask[i] = 1
+                    break
 
         return masks
 
