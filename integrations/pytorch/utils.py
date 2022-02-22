@@ -16,6 +16,7 @@
 Helper methods for image classification/detection based tasks
 """
 import os
+from copy import deepcopy
 from enum import Enum, auto, unique
 from typing import Any, List, Optional, Tuple, Union
 
