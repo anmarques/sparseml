@@ -16,6 +16,7 @@
 Helper methods for image classification/detection based tasks
 """
 import os
+from copy import deepcopy
 from enum import Enum, auto, unique
 from typing import Any, List, Optional, Tuple, Union
 
@@ -245,11 +246,20 @@ def create_model(args: Any, num_classes: int) -> Module:
                     "'zoo' provided as --checkpoint-path but a SparseZoo stub"
                     " prefixed by 'zoo:' not provided as --recipe-path"
                 )
-
+        ''' 
         model = ModelRegistry.create(
             args.arch_key,
             args.pretrained,
             args.checkpoint_path,
+            args.pretrained_dataset,
+            num_classes=num_classes,
+            **args.model_kwargs,
+        )
+        '''
+        model = ModelRegistry.create(
+            args.arch_key,
+            args.pretrained,
+            None,
             args.pretrained_dataset,
             num_classes=num_classes,
             **args.model_kwargs,

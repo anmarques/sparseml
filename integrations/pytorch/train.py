@@ -68,6 +68,7 @@ optional arguments:
                         schedule to apply them with. Can also provide a
                         SparseZoo stub prefixed with 'zoo:' with an optional
                         '?recipe_type=' argument
+  --pre-recipe-path PRE_RECIPE_PATH
   --sparse-transfer-learn [SPARSE_TRANSFER_LEARN]
                         Enable sparse transfer learning modifiers to enforce
                         the sparsity for already sparse layers. The modifiers
@@ -154,6 +155,8 @@ import json
 import os
 from dataclasses import dataclass, field
 from typing import Any, List, Optional, Tuple
+from collections import OrderedDict
+from copy import deepcopy
 
 import torch
 from torch.nn import Module
@@ -321,6 +324,17 @@ class TrainingArguments:
     )
 
     recipe_path: str = field(
+        default=None,
+        metadata={
+            "help": "The path to the yaml file containing the modifiers and "
+            "schedule to apply them with. Can also provide a "
+            "SparseZoo stub prefixed with 'zoo:' with an optional "
+            "'?recipe_type=' argument"
+        },
+    )
+    
+
+    pre_recipe_path: str = field(
         default=None,
         metadata={
             "help": "The path to the yaml file containing the modifiers and "
@@ -688,6 +702,32 @@ def main():
 
     # # model creation
     model = utils.create_model(training_args, num_classes)
+   
+    # load checkpoint info
+    if training_args.checkpoint_path:
+        dict_org = torch.load(training_args.checkpoint_path)
+        checkpoint_epoch = dict_org.get("epoch", float("inf"))
+        if "model_state_dict" in dict_org:
+            dict_org = dict_org['model_state_dict']
+        if "state_dict" in dict_org:
+            dict_org = dict_org['state_dict']
+    else:
+        checkpoint_epoch = float("inf")
+    
+
+    # Apply pre-recipe
+    if training_args.pre_recipe_path:
+        # import here to avoid cyclic dependencies
+        from sparseml.pytorch.optim import ScheduledModifierManager
+        ScheduledModifierManager.from_yaml(training_args.pre_recipe_path).apply(model, epoch=checkpoint_epoch)
+
+
+    # load checkpoint weights
+    if training_args.checkpoint_path:
+        new_dict_org = OrderedDict({key: dict_org[key]  for key in model.state_dict().keys()})
+        model.load_state_dict(new_dict_org)
+
+    # training steps
     train(
         training_args, model, train_loader, val_loader, input_shape, save_dir, loggers
     )
