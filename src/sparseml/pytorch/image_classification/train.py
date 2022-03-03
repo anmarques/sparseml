@@ -620,6 +620,8 @@ def train(
                         save_dir,
                         epoch,
                         val_res,
+                        False,
+                        False,
                     )
                     best_metric = val_metric
 
@@ -638,6 +640,8 @@ def train(
                     save_dir,
                     epoch,
                     val_res,
+                    False,
+                    False,
                 )
 
             epoch += 1
@@ -648,7 +652,7 @@ def train(
             # only convert qat -> quantized ONNX graph for finalized model
             # TODO: change this to all checkpoints when conversion times improve
             helpers.save_model_training(
-                model, optim, input_shape, "model", save_dir, epoch - 1, val_res, True
+                model, optim, input_shape, "model", save_dir, epoch - 1, val_res, True, False
             )
 
             LOGGER.info("layer sparsities:")

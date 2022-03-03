@@ -384,6 +384,7 @@ def save_model_training(
     epoch: int,
     val_res: Union[ModuleRunResults, None],
     convert_qat: bool = False,
+    export_onnx: bool = True,
 ):
     """
     :param model: model architecture
@@ -404,11 +405,12 @@ def save_model_training(
     )
     exporter = ModuleExporter(model, save_dir)
     exporter.export_pytorch(optim, epoch, f"{save_name}.pth")
-    exporter.export_onnx(
-        torch.randn(1, *input_shape),
-        f"{save_name}.onnx",
-        convert_qat=convert_qat,
-    )
+    if export_onnx:
+        exporter.export_onnx(
+            torch.randn(1, *input_shape),
+            f"{save_name}.onnx",
+            convert_qat=convert_qat,
+        )
 
     info_path = os.path.join(save_dir, f"{save_name}.txt")
 
