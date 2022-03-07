@@ -44,14 +44,14 @@ except Exception as _err:
     QATLinear = None
     QATConv2d = None
 
+from sparseml.utils import create_dirs, save_numpy
+
+
 try:
     from torch.nn.qat import Conv3d as QATConv3d
 except Exception as _err:
     quant_conv3d_err = _err
     QATConv3d = None
-
-from sparseml.utils import create_dirs, save_numpy
-
 
 __all__ = [
     "default_device",
@@ -822,7 +822,7 @@ def get_quantized_layers(module: Module) -> List[Tuple[str, Module]]:
         ):
             quantized_layers.append((name, mod))
 
-        elif isinstance(mod, QATConv3d) and not QATConv3d:
+        elif isinstance(mod, Conv3d) and not QATConv3d:
             warnings.warn(
                 "Pytorch version is not setup for Conv3D Quantization. "
                 "Quantization of Conv3D layers will be skipped",
