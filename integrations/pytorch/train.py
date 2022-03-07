@@ -595,6 +595,8 @@ def train(
         best_metric = None
         val_res = None
 
+        print(model)
+        exit()
         while epoch < manager.max_epochs:
             if train_args.debug_steps > 0:
                 # correct since all optimizer steps are not
